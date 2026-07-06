@@ -2722,8 +2722,30 @@ function ProjectsPage() {
 }
 
 function App() {
-  const hashRoute = APP_BASE && window.location.hash.startsWith("#/")
-    ? window.location.hash.slice(2)
+  const [locationState, setLocationState] = useState(() => ({
+    pathname: window.location.pathname,
+    hash: window.location.hash,
+  }));
+
+  useEffect(() => {
+    const syncLocation = () => {
+      setLocationState({
+        pathname: window.location.pathname,
+        hash: window.location.hash,
+      });
+    };
+
+    window.addEventListener("hashchange", syncLocation);
+    window.addEventListener("popstate", syncLocation);
+
+    return () => {
+      window.removeEventListener("hashchange", syncLocation);
+      window.removeEventListener("popstate", syncLocation);
+    };
+  }, []);
+
+  const hashRoute = APP_BASE && locationState.hash.startsWith("#/")
+    ? locationState.hash.slice(2)
     : "";
   const hashParts = hashRoute.split("/").filter(Boolean);
   const hashRoutePath = hashParts[0]
@@ -2738,9 +2760,9 @@ function App() {
     : hashParts[0] === "services" || hashParts[0] === "projects" || hashParts[0] === "workforce"
       ? hashParts[1] ?? ""
       : "";
-  const pathname = APP_BASE && window.location.pathname.startsWith(APP_BASE)
-    ? window.location.pathname.slice(APP_BASE.length) || "/"
-    : window.location.pathname;
+  const pathname = APP_BASE && locationState.pathname.startsWith(APP_BASE)
+    ? locationState.pathname.slice(APP_BASE.length) || "/"
+    : locationState.pathname;
   const routedPath = hashRoutePath || pathname;
   const currentPath = BLOG_ROUTE_ALIASES[routedPath] ?? routedPath;
   const isServicesPage = currentPath === "/services" || currentPath === "/about";
@@ -2817,7 +2839,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const targetId = hashTarget || (!window.location.hash.startsWith("#/") ? window.location.hash.slice(1) : "");
+    const targetId = hashTarget || (!locationState.hash.startsWith("#/") ? locationState.hash.slice(1) : "");
     if (!targetId) {
       return;
     }
@@ -2834,7 +2856,7 @@ function App() {
       window.clearTimeout(immediateScroll);
       window.clearTimeout(settledScroll);
     };
-  }, [currentPath, hashTarget]);
+  }, [currentPath, hashTarget, locationState.hash]);
 
   return (
     <div className="site-shell">
