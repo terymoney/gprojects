@@ -23,7 +23,17 @@ const siteHref = (href: string) => {
     return href;
   }
 
-  return href.startsWith("/") ? `${APP_BASE}${href}` : href;
+  if (!href.startsWith("/") || !APP_BASE) {
+    return href;
+  }
+
+  const [path, fragment] = href.split("#");
+  if (path === "/" && !fragment) {
+    return `${APP_BASE}/`;
+  }
+
+  const routePath = path === "/" ? "/home" : path;
+  return `${APP_BASE}/#${routePath}${fragment ? `/${fragment}` : ""}`;
 };
 const BLOG_ROUTE_ALIASES: Record<string, string> = {
   "/blog/how-digital-tools-are-changing-construction-project-management":
@@ -2712,10 +2722,27 @@ function ProjectsPage() {
 }
 
 function App() {
+  const hashRoute = APP_BASE && window.location.hash.startsWith("#/")
+    ? window.location.hash.slice(2)
+    : "";
+  const hashParts = hashRoute.split("/").filter(Boolean);
+  const hashRoutePath = hashParts[0]
+    ? hashParts[0] === "home"
+      ? "/"
+      : hashParts[0] === "blog" && hashParts.length > 1
+        ? `/blog/${hashParts.slice(1).join("/")}`
+        : `/${hashParts[0]}`
+    : "";
+  const hashTarget = hashParts[0] === "home"
+    ? hashParts[1] ?? ""
+    : hashParts[0] === "services" || hashParts[0] === "projects" || hashParts[0] === "workforce"
+      ? hashParts[1] ?? ""
+      : "";
   const pathname = APP_BASE && window.location.pathname.startsWith(APP_BASE)
     ? window.location.pathname.slice(APP_BASE.length) || "/"
     : window.location.pathname;
-  const currentPath = BLOG_ROUTE_ALIASES[pathname] ?? pathname;
+  const routedPath = hashRoutePath || pathname;
+  const currentPath = BLOG_ROUTE_ALIASES[routedPath] ?? routedPath;
   const isServicesPage = currentPath === "/services" || currentPath === "/about";
   const isWorkforcePage = currentPath === "/workforce";
   const isBlogPage = currentPath === "/blog";
@@ -2790,12 +2817,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!window.location.hash) {
+    const targetId = hashTarget || (!window.location.hash.startsWith("#/") ? window.location.hash.slice(1) : "");
+    if (!targetId) {
       return;
     }
 
     const scrollToHashTarget = () => {
-      const target = document.getElementById(window.location.hash.slice(1));
+      const target = document.getElementById(targetId);
       target?.scrollIntoView({ block: "start" });
     };
 
@@ -2806,7 +2834,7 @@ function App() {
       window.clearTimeout(immediateScroll);
       window.clearTimeout(settledScroll);
     };
-  }, [currentPath]);
+  }, [currentPath, hashTarget]);
 
   return (
     <div className="site-shell">
