@@ -15,6 +15,7 @@ const PHONE_HREF = `tel:${PHONE_TEL}`;
 const EMAIL = "info@gprojects.ng";
 const INSTAGRAM_HANDLE = "@gprojectsng";
 const INSTAGRAM_URL = "https://www.instagram.com/gprojectsng?igsh=ajRvNWZlMnBzYjl0";
+const LOCATION_URL = "https://maps.apple/p/faNBWs3N7~_xrF";
 const BUILD_IT_URL = "https://tanstack-start-app.teryclair-te.workers.dev/initiatives/build-it";
 const BUILD_IT_JOB_POOL_URL = "https://build-it-320735813824.us-west1.run.app/";
 const APP_BASE = import.meta.env.BASE_URL === "/" ? "" : import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -3179,13 +3180,13 @@ function App() {
                   </a>
                 </li>
                 <li>
-                  <span>
+                  <a href={LOCATION_URL} target="_blank" rel="noopener noreferrer">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 21s7-5.4 7-12a7 7 0 0 0-14 0c0 6.6 7 12 7 12Z" />
                       <path d="M12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
                     </svg>
                     Port Harcourt, Nigeria
-                  </span>
+                  </a>
                 </li>
               </ul>
               <div className="footer-work-hours">
