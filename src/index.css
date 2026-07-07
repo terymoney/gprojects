@@ -3909,6 +3909,10 @@ em {
     padding-top: 96px;
   }
 
+  .blog-sidebar {
+    display: none;
+  }
+
   .blog-post-row {
     grid-template-columns: 1fr;
     padding: 22px;

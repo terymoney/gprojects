@@ -2873,7 +2873,7 @@ function App() {
 
           <nav className="nav-links" aria-label="Primary navigation">
             <a href={siteHref("/")} onClick={() => setIsMobileMenuOpen(false)}>Home</a>
-            <a href={siteHref("/services#about-gprojects")} onClick={() => setIsMobileMenuOpen(false)}>About</a>
+            <a href={siteHref("/services")} onClick={() => setIsMobileMenuOpen(false)}>About</a>
             <a href={siteHref("/services#full-services")} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
             <a href={siteHref("/projects")} onClick={() => setIsMobileMenuOpen(false)}>Projects</a>
             <a href={siteHref("/blog")} onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
