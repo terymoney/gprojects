@@ -3308,14 +3308,14 @@ em {
 }
 
 .footer-newsletter h3 {
-  max-width: 680px;
+  max-width: 540px;
   margin: 0;
   color: var(--white);
   font-family: var(--body);
-  font-size: clamp(1.85rem, 3vw, 3rem);
-  font-weight: 600;
-  line-height: 1.22;
-  letter-spacing: -0.018em;
+  font-size: clamp(1.35rem, 2vw, 2.05rem);
+  font-weight: 500;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
 }
 
 .footer-subscribe {

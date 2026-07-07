@@ -620,7 +620,7 @@ const blogItems = [
     type: "Featured Link",
     date: "June 14, 2026",
     image: blogCompanyUpdateImg,
-    href: "/services#about-gprojects",
+    href: "/services",
     excerpt:
       "GProjects Limited is positioning itself as a structured project delivery company focused on architecture, construction, project management, workforce coordination, and digital support for real-sector development.",
     preview:
@@ -2958,7 +2958,7 @@ function App() {
               <p>
                 As part of the wider G Initiative ecosystem, GProjects creates systems for delivery, bringing structure to planning, procurement, site coordination, workforce alignment and long-term project value.
               </p>
-              <a href={siteHref("/services#about-gprojects")} className="button button--forest">
+              <a href={siteHref("/services")} className="button button--forest">
                 Learn More <span aria-hidden="true">&rarr;</span>
               </a>
             </div>
