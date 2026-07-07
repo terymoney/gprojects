@@ -3746,19 +3746,60 @@ em {
     padding-bottom: 46px;
   }
 
+  .hero-section .eyebrow {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 10px;
+  }
+
+  .hero-section .eyebrow::before {
+    width: 24px;
+    margin-top: 0.62em;
+  }
+
   .hero-title {
     font-size: clamp(2.55rem, 14vw, 4rem);
   }
 
   .hero-actions,
   .workforce-actions {
-    align-items: flex-start;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
   }
 
   .workforce-opportunities-actions {
-    align-items: flex-start;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hero-actions .button,
+  .hero-actions .button-link,
+  .workforce-actions .button,
+  .workforce-actions .button-link,
+  .workforce-opportunities-actions .button,
+  .workforce-opportunities-actions .button-link,
+  .blog-article-cta .button,
+  .blog-article-cta .button-link,
+  .workforce-final-card .button,
+  .workforce-final-card .button-link {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    justify-content: center;
+    padding-inline: 12px;
+    font-size: 0.82rem;
+  }
+
+  .blog-article-cta > div,
+  .workforce-final-card > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .section {
@@ -3967,8 +4008,7 @@ em {
   }
 
   .workforce-final-card > div {
-    align-items: center;
-    flex-direction: column;
+    align-items: stretch;
   }
 }
 
