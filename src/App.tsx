@@ -1910,14 +1910,6 @@ function AboutServicesPage() {
             <p>
               Through architecture, construction, project management, workforce coordination, procurement support, and BuildIT-powered digital systems, GProjects connects physical development with the tools needed to plan, source, manage, and scale projects with greater clarity.
             </p>
-            <div className="subpage-hero-actions">
-              <a href="#contact" className="button button--forest">
-                Start a Project <span aria-hidden="true">&rarr;</span>
-              </a>
-              <a href="#full-services" className="button-link button-link--dark">
-                Explore Services
-              </a>
-            </div>
           </div>
 
           <div className="subpage-hero-media" aria-hidden="true">
@@ -2726,6 +2718,7 @@ function App() {
     pathname: window.location.pathname,
     hash: window.location.hash,
   }));
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const syncLocation = () => {
@@ -2772,6 +2765,10 @@ function App() {
   const activeBlogPost = blogItems.find(
     (item) => item.type === "Blog Article" && item.href === currentPath,
   );
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [currentPath, locationState.hash]);
 
   useEffect(() => {
     const cardSelector = ".service-card, .why-partner-card, .buildit-link-list a, .workforce-opportunities-list li, .ecosystem-role-card, .service-detail-card, .subpage-why-card, .workforce-benefit-card, .workforce-step, .workforce-faq-list details, .blog-post-row, .blog-recent-item, .blog-quote-card, .portfolio-card, .project-showcase, .project-facts-panel";
@@ -2840,13 +2837,21 @@ function App() {
 
   useEffect(() => {
     const targetId = hashTarget || (!locationState.hash.startsWith("#/") ? locationState.hash.slice(1) : "");
-    if (!targetId) {
-      return;
-    }
+    const headerOffset = 86;
 
     const scrollToHashTarget = () => {
+      if (!targetId) {
+        window.scrollTo({ top: 0, behavior: "auto" });
+        return;
+      }
+
       const target = document.getElementById(targetId);
-      target?.scrollIntoView({ block: "start" });
+      if (!target) {
+        return;
+      }
+
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: Math.max(targetTop, 0), behavior: "auto" });
     };
 
     const immediateScroll = window.setTimeout(scrollToHashTarget, 0);
@@ -2860,31 +2865,37 @@ function App() {
 
   return (
     <div className="site-shell">
-      <header className="site-header site-header--solid">
+      <header className={`site-header site-header--solid ${isMobileMenuOpen ? "is-menu-open" : ""}`}>
         <div className="container header-inner">
-          <a href="#top" className="brand" aria-label="GProjects Limited home">
+          <a href={siteHref("/")} className="brand" aria-label="GProjects Limited home">
             <img src={logoAsset} alt="GProjects Limited" className="brand-logo" />
           </a>
 
           <nav className="nav-links" aria-label="Primary navigation">
-            <a href={siteHref("/")}>Home</a>
-            <a href={siteHref("/services#about-gprojects")}>About</a>
-            <a href={siteHref("/services#full-services")}>Services</a>
-            <a href={siteHref("/projects")}>Projects</a>
-            <a href={siteHref("/blog")}>Blog</a>
-            <a href={BUILD_IT_URL} target="_blank" rel="noopener noreferrer">BuildIT</a>
-            <a href={siteHref("/workforce")}>Workforce</a>
+            <a href={siteHref("/")} onClick={() => setIsMobileMenuOpen(false)}>Home</a>
+            <a href={siteHref("/services#about-gprojects")} onClick={() => setIsMobileMenuOpen(false)}>About</a>
+            <a href={siteHref("/services#full-services")} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+            <a href={siteHref("/projects")} onClick={() => setIsMobileMenuOpen(false)}>Projects</a>
+            <a href={siteHref("/blog")} onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
+            <a href={BUILD_IT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>BuildIT</a>
+            <a href={siteHref("/workforce")} onClick={() => setIsMobileMenuOpen(false)}>Workforce</a>
           </nav>
 
           <a href="#contact" className="header-cta">
             Start a Project
           </a>
 
-          <a href="#contact" className="mobile-menu" aria-label="Open contact section">
+          <button
+            type="button"
+            className="mobile-menu"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+          >
             <span />
             <span />
             <span />
-          </a>
+          </button>
         </div>
       </header>
 
