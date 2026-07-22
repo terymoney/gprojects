@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 src.zip
+config/database.php
+config/admin.php
+config/mail.php
 
 # Editor directories and files
 .vscode/*

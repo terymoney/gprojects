@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import logoAsset from "./assets/g-projects-logo.png";
 import heroImg from "./assets/hero-architecture.jpg";
 import blogBuilditBrainImg from "./assets/blog-buildit-brain.png";
@@ -8,6 +9,17 @@ import blogDigitalToolsImg from "./assets/blog-digital-tools.png";
 import blogDocumentationImg from "./assets/blog-documentation.png";
 import blogProjectManagementImg from "./assets/blog-project-management.png";
 import blogWorkforceImg from "./assets/blog-workforce.png";
+import blogSdgImg from "./assets/blog-17-sdgs.png";
+import blogAspireAfricaImg from "./assets/blog-aspire-africa.png";
+import blogDigitalLiteracyImg from "./assets/blog-digital-literacy.jpg";
+import blogGrillItImg from "./assets/blog-grill-it.png";
+import ganiruOkoroImg from "./assets/arch-ganiru-okoro.jpg";
+import ganiruCalligraphyImg from "./assets/calligraphy-name.png";
+import gInitiativeMark from "./assets/ginitiative-gmark-transparent.png";
+import gInitiativeCommunityImg from "./assets/g-initiative-community-impact.png";
+import LeadershipSection from "./components/LeadershipSection";
+import ProjectEnquiryModal from "./components/ProjectEnquiryModal";
+import WebsiteStatsSection from "./components/WebsiteStatsSection";
 
 const PHONE = "+234 816 493 6724";
 const PHONE_TEL = "+2348164936724";
@@ -18,6 +30,7 @@ const INSTAGRAM_URL = "https://www.instagram.com/gprojectsng?igsh=ajRvNWZlMnBzYj
 const LOCATION_URL = "https://maps.apple/p/faNBWs3N7~_xrF";
 const BUILD_IT_URL = "https://tanstack-start-app.teryclair-te.workers.dev/initiatives/build-it";
 const BUILD_IT_JOB_POOL_URL = "https://build-it-320735813824.us-west1.run.app/";
+const G_INITIATIVE_URL = "https://tanstack-start-app.teryclair-te.workers.dev/";
 const APP_BASE = import.meta.env.BASE_URL === "/" ? "" : import.meta.env.BASE_URL.replace(/\/$/, "");
 const siteHref = (href: string) => {
   if (/^(https?:|mailto:|tel:)/.test(href) || href.startsWith("#")) {
@@ -36,10 +49,26 @@ const siteHref = (href: string) => {
   const routePath = path === "/" ? "/home" : path;
   return `${APP_BASE}/#${routePath}${fragment ? `/${fragment}` : ""}`;
 };
+const setMetaTag = (selector: string, attribute: "name" | "property", key: string, content: string) => {
+  let element = document.head.querySelector<HTMLMetaElement>(selector);
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, key);
+    document.head.appendChild(element);
+  }
+  element.setAttribute("content", content);
+};
+const getCommentCountText = (count: number) =>
+  count === 0 ? "No Comments" : count === 1 ? "1 Comment" : `${count} Comments`;
 const BLOG_ROUTE_ALIASES: Record<string, string> = {
   "/blog/how-digital-tools-are-changing-construction-project-management":
     "/blog/how-digital-tools-are-changing-the-way-construction-projects-are-managed",
 };
+const BLOG_CONTAINED_IMAGE_ROUTES = new Set([
+  "/blog/building-a-better-future-together",
+  "/blog/gprojects-sets-benchmark-with-ginitiative-csr-achievements",
+]);
+const getBlogSlug = (href: string) => href.split("/").pop() ?? href;
 const projectImageModules = import.meta.glob<string>("./assets/projects/**/*.jpg", {
   eager: true,
   query: "?url",
@@ -351,7 +380,7 @@ const serviceDetails = [
     summary:
       "GProjects manages project operations from planning to completion, helping clients coordinate people, budgets, timelines, suppliers, documentation, and site progress.",
     detail:
-      "This includes project scheduling, supervision, reporting, workforce coordination, quality checks, and delivery oversight so every stage remains visible and organised.",
+      "This includes project scheduling, supervision, reporting, workforce coordination, QA/QC, HSE checks, material stock visibility, accounting inputs, budget control, and delivery oversight so every stage remains transparent, safe, and organised.",
     connection: "Project Portfolio, timelines, documentation, budget visibility.",
   },
   {
@@ -386,6 +415,22 @@ const serviceDetails = [
   },
 ];
 
+const getProjectModalPreset = (label: string) => {
+  const presets: Record<string, string> = {
+    "Architectural Services": "Architecture and Design",
+    "Civil Construction": "Construction",
+    "Operations & Project Management": "Project Management",
+    "Finance & Administration": "Project Management",
+    "Innovation & Technology": "BuildIT-Powered Project Support",
+    "Custom / Bespoke & Contracts": "Other",
+    "Partner With Us": "Partnership or Collaboration",
+  };
+
+  return presets[label] ?? "";
+};
+
+type ProjectModalOpener = (presetService?: string, triggerLabel?: string, triggerElement?: HTMLElement) => void;
+
 const buildItPillars = [
   {
     title: "Builders Market",
@@ -416,6 +461,128 @@ const buildItPillars = [
     title: "Real Estate & REITs",
     body: "A property and investment pathway for real estate opportunities, fractional participation, funding models, and long-term asset value.",
     href: `${BUILD_IT_URL}#real-estate-reits`,
+  },
+];
+
+const gInitiativeImpactHighlights = [
+  {
+    value: "30,000+",
+    body: "Eggs distributed during emergency food intervention.",
+  },
+  {
+    value: "2,000+",
+    body: "Face masks and sanitisers shared during COVID-19 response.",
+  },
+  {
+    value: "2019-2020",
+    body: "Feed support provided to Agro-SMEs for food production.",
+  },
+  {
+    value: "COVID-19 Response",
+    body: "Health awareness through media, flyers, radio and education.",
+  },
+  {
+    value: "20 Undergraduates",
+    body: "Supported with SME grants for entrepreneurship.",
+  },
+  {
+    value: "2020",
+    body: "Ikeduru Half Marathon: Run for Digital Literacy.",
+  },
+  {
+    value: "Creative Support",
+    body: "2 laptops, an iPhone and N1m for digital enterprise.",
+  },
+  {
+    value: "N500,000",
+    body: "Essay competition prizes for sustainable development.",
+  },
+  {
+    value: "Girl-Child Platform",
+    body: "Education, digital literacy, health and leadership support.",
+  },
+  {
+    value: "Women Development Centre",
+    body: "Nwaiha centre built for training and community support.",
+  },
+  {
+    value: "2 Editions",
+    body: "Akabo Super League delivered in 2019 and 2024.",
+  },
+  {
+    value: "20 Students",
+    body: "FSLC and WAEC examination forms sponsored.",
+  },
+  {
+    value: "Two-Classroom Block",
+    body: "Akabo Community School learning block rehabilitated.",
+  },
+  {
+    value: "2 Weeks",
+    body: "Aspire Leadership Master Class training delivered.",
+  },
+  {
+    value: "Cultural Heritage",
+    body: "Akabo heritage display and youth carnival supported.",
+  },
+  {
+    value: "2024",
+    body: "NWFL Woman of the Match Award supported.",
+  },
+  {
+    value: "2025",
+    body: "Day of the Girl Child held at Akabo High School.",
+  },
+  {
+    value: "Pad Her Up Campaign",
+    body: "Menstrual-health education and sanitary support advocacy.",
+  },
+  {
+    value: "School Health Programme",
+    body: "HPV, glaucoma and wider student health sensitisation.",
+  },
+  {
+    value: "Miss Akabo Platform",
+    body: "Leadership and girl-child confidence platform supported.",
+  },
+  {
+    value: "Community Security",
+    body: "Resources and local support for community security.",
+  },
+  {
+    value: "Isabella Farms",
+    body: "Poultry, crop cultivation and food-security growth.",
+  },
+  {
+    value: "Akabo Youth Carnival",
+    body: "Peace-building, culture and youth participation platform.",
+  },
+  {
+    value: "Grassroots Football",
+    body: "Male and female community football activities sponsored.",
+  },
+];
+
+const coreValues = [
+  {
+    icon: "heritage",
+    title: "Heritage",
+    body: "Design thinking that respects cultural identity, place and long-term community meaning.",
+  },
+  {
+    icon: "innovation",
+    title: "Innovation",
+    body: "Creative, technology-aware project development shaped by modern real-sector needs.",
+  },
+  {
+    icon: "sustainability",
+    title: "Sustainability",
+    body: "Responsible development choices that consider people, environment and future value.",
+  },
+  {
+    icon: "delivery",
+    title: "Delivery",
+    body: "Disciplined planning, coordination and execution from concept through completion.",
   },
 ];
 
@@ -553,7 +720,110 @@ const workforceFaqs = [
   },
 ];
 
+type BlogArticleSection = {
+  title: string;
+  body: string[];
+  list?: string[];
+  orderedList?: string[];
+  note?: string;
+  quotes?: Array<{
+    body: string;
+    attribution: string;
+  }>;
+  subsections?: Array<{
+    title: string;
+    eyebrow?: string;
+    body: string[];
+    list?: string[];
+    color?: string;
+    darkText?: boolean;
+  }>;
+  strengths?: Array<{
+    title: string;
+    body: string;
+  }>;
+};
+
+type BlogArticleDetails = {
+  intro: string[];
+  sections: BlogArticleSection[];
+  tip?: {
+    title: string;
+    body: string;
+  };
+  cta?: {
+    title: string;
+    body: string;
+    primaryLabel?: string;
+    primaryHref?: string;
+    primaryExternal?: boolean;
+    secondaryLabel?: string;
+    secondaryHref?: string;
+    actionItems?: string[];
+    contact?: {
+      email: string;
+      website: string;
+      phone: string;
+      closing: string;
+    };
+    showContactLinks?: boolean;
+  };
+  quote?: {
+    body: string;
+    attribution: string;
+  };
+  sources?: Array<{
+    label: string;
+    href: string;
+  }>;
+  seo?: {
+    title: string;
+    description: string;
+    image: string;
+    publishedTime: string;
+  };
+};
+
 const blogItems = [
+  {
+    title: "Building a Better Future Together: Partnering with GProjects Limited Through GInitiative for Sustainable Development and Human Impact",
+    category: "Sustainable Development",
+    type: "Blog Article",
+    date: "July 25, 2025",
+    image: blogSdgImg,
+    imageAlt: "The 17 United Nations Sustainable Development Goals displayed against a green nature background.",
+    href: "/blog/building-a-better-future-together",
+    excerpt:
+      "GProjects Limited, through GInitiative, has spent the last decade delivering measurable impact across sustainable development, youth empowerment, education, healthcare, innovation, and community development.",
+    preview:
+      "In a rapidly evolving world marked by pressing social, economic, and environmental challenges, GProjects Limited is proving that purpose and profit can work hand in hand. Through GInitiative, the company has spent the last decade building lives, empowering communities, and advancing sustainable development.",
+  },
+  {
+    title: "GProjects Limited Sets Benchmark with GInitiative CSR Achievements: Advancing 17 UN-SDGs with 80% Completion",
+    category: "CSR and Sustainable Development",
+    type: "Blog Article",
+    date: "July 25, 2025",
+    image: blogAspireAfricaImg,
+    imageAlt: "Aspire Africa logo with a colourful stylised map of Africa.",
+    href: "/blog/gprojects-sets-benchmark-with-ginitiative-csr-achievements",
+    excerpt:
+      "GProjects Limited is setting a benchmark for private-sector-led development by integrating the United Nations Sustainable Development Goals into its construction, project management and community-impact programmes.",
+    preview:
+      "GProjects Limited is setting a benchmark for private-sector-led development by integrating the United Nations Sustainable Development Goals into its construction, project management and community-impact programmes.",
+  },
+  {
+    title: "Unlocking the Future: How GInitiative's Digital Literacy Project Is Empowering the Next Generation",
+    category: "Digital Literacy and Youth Empowerment",
+    type: "Blog Article",
+    date: "July 25, 2025",
+    image: blogDigitalLiteracyImg,
+    imageAlt: "Digital youth development centre concept with modular learning spaces and Aspire Africa branding.",
+    href: "/blog/unlocking-the-future-digital-literacy-project",
+    excerpt:
+      "The Digital Literacy Project, powered by GInitiative in partnership with Aspire Africa and the Imo State Government, is equipping young people with the practical digital skills required to learn, work, create and compete in the modern economy.",
+    preview:
+      "Discover how GInitiative's Digital Literacy Project is equipping young people with skills for employment, entrepreneurship and participation in the digital economy.",
+  },
   {
     title: "What Clients Should Know Before Starting a Construction Project",
     category: "Client Guide",
@@ -621,7 +891,7 @@ const blogItems = [
     type: "Featured Link",
     date: "June 14, 2026",
     image: blogCompanyUpdateImg,
-    href: "/services",
+    href: "/about",
     excerpt:
       "GProjects Limited is positioning itself as a structured project delivery company focused on architecture, construction, project management, workforce coordination, and digital support for real-sector development.",
     preview:
@@ -641,35 +911,560 @@ const blogItems = [
   },
 ];
 
-const blogArticleDetails: Record<
-  string,
-  {
-    intro: string[];
-    sections: Array<{
-      title: string;
-      body: string[];
-      list?: string[];
-      note?: string;
-    }>;
-    tip?: {
-      title: string;
-      body: string;
-    };
-    cta?: {
-      title: string;
-      body: string;
-      primaryLabel?: string;
-      primaryHref?: string;
-      primaryExternal?: boolean;
-      secondaryLabel?: string;
-      secondaryHref?: string;
-    };
-    sources?: Array<{
-      label: string;
-      href: string;
-    }>;
-  }
-> = {
+const getBlogImageAlt = (item: { imageAlt?: string }) => item.imageAlt ?? "";
+
+const blogArticleDetails: Record<string, BlogArticleDetails> = {
+  "/blog/building-a-better-future-together": {
+    intro: [
+      "In a rapidly evolving world marked by pressing social, economic, and environmental challenges, one Nigerian company is proving that purpose and profit can work hand in hand. GProjects Limited, through its powerful Corporate Social Responsibility arm known as GInitiative, has spent the last decade building more than just structures. They have been building lives, communities, and sustainable futures.",
+      "This blog post is more than a spotlight; it is a call to sponsors, development partners, donors, NGOs, government institutions, and socially conscious individuals to join forces with a platform already delivering measurable, scalable, and sustainable impact across Africa, starting from Nigeria.",
+    ],
+    sections: [
+      {
+        title: "Why GInitiative?",
+        body: [
+          "At the heart of GProjects' operations lies the vision to create a world where growth is inclusive, communities are empowered, and opportunities are accessible to all.",
+          "This vision aligns directly with the United Nations Sustainable Development Goals, a set of 17 interconnected goals serving as a global blueprint to end poverty, reduce inequality, ensure quality education, combat climate change, and address other global development challenges.",
+          "Since 2015, GProjects has adopted these global goals as a strategic blueprint and executed them locally through GInitiative.",
+          "To date, the company has achieved approximately 80% coverage across the 17 goals.",
+          "That is not just talk. It represents real, tangible progress in sustainable development, youth empowerment, education, healthcare, innovation, and community development.",
+        ],
+      },
+      {
+        title: "GInitiative in Action: Real Projects. Real Impact.",
+        body: [
+          "What does impact look like on the ground?",
+          "GInitiative's diverse and meaningful projects provide a strong answer. Below are some of the initiatives aligned with the Sustainable Development Goals.",
+        ],
+        subsections: [
+          {
+            title: "Covid-19 Quick Response",
+            eyebrow: "SDGs 2 and 3",
+            color: "#dda63a",
+            darkText: true,
+            body: ["Distributed 30,000 healthy eggs to combat child malnutrition during the pandemic."],
+          },
+          {
+            title: "Agro-SME Feed Support",
+            eyebrow: "SDGs 1 and 2",
+            color: "#e5243b",
+            body: ["Provided critical feed to struggling agribusinesses during food-scarcity seasons."],
+          },
+          {
+            title: "Mass Awareness Campaigns",
+            eyebrow: "SDG 3",
+            color: "#4c9f38",
+            body: ["Developed educational materials and deployed large-scale public-health awareness campaigns during COVID-19."],
+          },
+          {
+            title: "Student SME Grants",
+            eyebrow: "SDGs 4 and 8",
+            color: "#a21942",
+            body: ["Awarded startup grants to 20 entrepreneurial undergraduates."],
+          },
+          {
+            title: "Ikeduru Half Marathon",
+            eyebrow: "SDGs 4, 10 and 17",
+            color: "#19486a",
+            body: ['Sponsored a local sporting event themed "Run for Digital Literacy" in partnership with Ikeduru Local Government Area.'],
+          },
+          {
+            title: "Digital Equipment and Creative Grants",
+            eyebrow: "SDGs 4, 5 and 8",
+            color: "#c5192d",
+            body: ["Donated laptops, iPhones, and more than N1 million to support content creators and digital entrepreneurs."],
+          },
+          {
+            title: "Girl Child Empowerment Initiative",
+            eyebrow: "SDG 5",
+            color: "#ff3a21",
+            body: ['Launched the "G" for the Girl Child Project, promoting gender equality and digital entrepreneurship among girls.'],
+          },
+          {
+            title: "Nwaiha Women Development Centre",
+            eyebrow: "SDGs 4, 8 and 11",
+            color: "#fd9d24",
+            darkText: true,
+            body: ["Designed and built a fully functional event hub through crowdfunding."],
+          },
+          {
+            title: "Grassroots Talent Development",
+            eyebrow: "SDGs 8 and 10",
+            color: "#dd1367",
+            body: ["Sponsored the Akabo Super League to highlight and promote local sporting talent."],
+          },
+          {
+            title: "Educational Support Programmes",
+            eyebrow: "SDGs 1 and 4",
+            color: "#c5192d",
+            body: ["Sponsored examination registration for underprivileged students and rehabilitated public-school classrooms."],
+          },
+          {
+            title: "Leadership Training and Mentorship",
+            eyebrow: "SDGs 4, 16 and 17",
+            color: "#00689d",
+            body: ["Hosted the Aspire Leadership Masterclass in collaboration with the Iwanyanwu Foundation."],
+          },
+          {
+            title: "Cultural Preservation and Youth Engagement",
+            eyebrow: "SDG 11",
+            color: "#fd9d24",
+            darkText: true,
+            body: ["Co-organised the Akabo Cultural Heritage Display and Youth Carnival."],
+          },
+        ],
+        note: "Each of these projects represents more than charity. They are investments in long-term change, creating platforms where lives are uplifted, futures are secured, and systems are improved.",
+      },
+      {
+        title: "How GProjects Integrates the SDGs into Core Practice",
+        body: [
+          "GProjects is not simply a donor or event sponsor. It is a builder of systems.",
+          "From smart project-management systems to environmentally conscious construction methods, the company incorporates sustainable practices into every project.",
+        ],
+        list: [
+          "Smart toolkits for tracking inventory and managing project accounts",
+          "Digital integration for workforce coordination and material-stock analysis",
+          "Quality Assurance and Quality Control protocols",
+          "Health, Safety and Environmental standards enforcement",
+          "Waste-reducing building technologies",
+        ],
+        note: "This ecosystem makes GProjects a trusted partner not only for development projects but also for responsible, long-term infrastructural development.",
+      },
+      {
+        title: "The Digital Youth Project: Empowering the Workforce of Tomorrow",
+        body: [
+          "One of GInitiative's flagship projects is the Digital Youth Project, launched in partnership with Aspire Africa and supported by the Imo State Government.",
+          "With the digital economy now shaping global growth, the Digital Youth Project aims to bridge Nigeria's widening digital-literacy gap by equipping young people with globally recognised certifications and relevant skills in:",
+        ],
+        list: [
+          "Computer literacy",
+          "Coding and software use",
+          "Graphics and animation",
+          "Online entrepreneurship",
+          "Digital communication skills",
+        ],
+        note: "Trainees participate in virtual and physical sessions and gain access to scalable career pathways. The result is a new generation of digitally equipped young people prepared to thrive in modern economies.",
+      },
+      {
+        title: "A Youth-Centred Ecosystem: More Than Training",
+        body: [
+          "GInitiative's Youth Development Centre is a comprehensive hub designed to identify, train, and connect young people with key sectors in the economy, including:",
+        ],
+        list: [
+          "Fashion and design",
+          "Agriculture and food processing",
+          "Construction and industrial work",
+          "Hospitality services",
+          "ICT and creative industries",
+          "A Research and Incubation Hub",
+          "Industrial SME Parks",
+          "Digital Skills Labs",
+          "A Think Tank and Data Bank",
+          "Creative Design Districts",
+        ],
+        note: "This entire ecosystem mirrors models seen in the UAE and other global hubs while being contextualised for African development.",
+      },
+      {
+        title: "Why You Should Join as a Sponsor or Partner",
+        body: [
+          "Every great movement is fuelled by collaboration.",
+          "GInitiative is inviting partners, investors, donors, organisations, and institutions passionate about meaningful change to join this movement.",
+        ],
+        strengths: [
+          {
+            title: "Proven Track Record",
+            body: "More than 10 years of project delivery and approximately 80% SDG integration.",
+          },
+          {
+            title: "Scalable Model",
+            body: "Impact-driven systems that can be expanded across communities and regions.",
+          },
+          {
+            title: "Transparency",
+            body: "Every project is tracked, monitored, documented, and reported.",
+          },
+          {
+            title: "Innovation-First Mindset",
+            body: "Digital tools are used for more than construction, improving project management, training, coordination, and community development.",
+          },
+          {
+            title: "People-Centred Approach",
+            body: "Programmes focus on real human needs, growth, opportunity, and dignity.",
+          },
+        ],
+      },
+      {
+        title: "Together, We Can Do More",
+        body: [
+          "The future does not build itself. It takes strategic investment, aligned partnerships, and the courage to act.",
+          "Whether you are a corporate organisation seeking a credible CSR platform, a donor agency looking to scale measurable impact, a government agency pursuing community-empowerment goals, a technology company aiming to bridge the digital divide, or a media organisation supporting youth and cultural programmes, there is room for you in GInitiative.",
+        ],
+      },
+    ],
+    cta: {
+      title: "Let's Build for Mankind",
+      body: "In a world hungry for solutions, GProjects Limited and GInitiative are not simply responding to problems. They are building pathways towards sustainable solutions. With increased support, these successes can be scaled to reach millions more people across Nigeria and Africa.",
+      primaryLabel: "Partner With GInitiative",
+      primaryHref: "mailto:ginitiative@gprojects.ng",
+      secondaryLabel: "Contact Us",
+      secondaryHref: "#contact",
+      actionItems: [
+        "Partner with GInitiative.",
+        "Support the SDGs through impactful projects.",
+        "Sponsor a student.",
+        "Fund a technology hub.",
+        "Build a classroom.",
+        "Empower a girl.",
+      ],
+      contact: {
+        email: "ginitiative@gprojects.ng",
+        website: "www.gprojects.ng",
+        phone: "+234 816 493 6724",
+        closing: "GInitiative by GProjects Limited - Smart Solutions. Bold Results. Better Humanity.",
+      },
+    },
+    seo: {
+      title: "Building a Better Future Together | GInitiative News",
+      description:
+        "Explore a decade of GInitiative's sustainable development projects, youth empowerment programmes, community initiatives and progress across the 17 United Nations Sustainable Development Goals.",
+      image: blogSdgImg,
+      publishedTime: "2025-07-25",
+    },
+  },
+  "/blog/gprojects-sets-benchmark-with-ginitiative-csr-achievements": {
+    intro: [
+      "In a remarkable show of purpose-driven development, GProjects Limited, an innovation-forward construction and project management firm, has emerged as a leading example of corporate responsibility in Africa through its social impact platform, GInitiative.",
+      "By integrating the United Nations Sustainable Development Goals into its core operations, GProjects has successfully implemented a wide range of community-focused programmes aimed at achieving a more inclusive, sustainable and empowered society.",
+      "Launched to serve as a catalyst for economic growth, youth empowerment and infrastructural development, GInitiative aligns closely with the global 17 Sustainable Development Goals adopted in 2015 by all United Nations Member States.",
+      "These goals target key areas including poverty reduction, gender equality, education, climate action, innovation and peace-building.",
+      "With over 75-80% of these goals already being addressed through measurable community interventions, GProjects continues to set the pace in Nigeria's private-sector-led development.",
+    ],
+    sections: [
+      {
+        title: "Highlights of GInitiative Projects in Alignment with the UN-SDGs",
+        body: [],
+        subsections: [
+          {
+            title: "Covid-19 Quick Rapid Response",
+            eyebrow: "SDGs 2 and 3",
+            color: "#dda63a",
+            darkText: true,
+            body: ["Distributed 30,000 fresh eggs to combat child malnutrition and strengthen immunity during the pandemic in 2019."],
+          },
+          {
+            title: "Feed Support for Agro-SMEs",
+            eyebrow: "SDGs 1 and 2",
+            color: "#e5243b",
+            body: ["Provided essential agricultural input to prevent starvation and support food producers between 2019 and 2020."],
+          },
+          {
+            title: "Public Health Awareness Campaign",
+            eyebrow: "SDG 3",
+            color: "#4c9f38",
+            body: ["Designed and distributed health-education materials during the COVID-19 pandemic to reduce misinformation."],
+          },
+          {
+            title: "Undergraduate SME Support",
+            eyebrow: "SDGs 4 and 8",
+            color: "#a21942",
+            body: ["Offered grants to 20 entrepreneurial students, encouraging academic excellence and business development."],
+          },
+          {
+            title: 'Ikeduru Half Marathon - "Run for Digital Literacy"',
+            eyebrow: "SDGs 4, 10 and 17",
+            color: "#19486a",
+            body: ["Sponsored an awareness campaign on digital skills through sporting events in partnership with Ikeduru Local Government Area."],
+          },
+          {
+            title: "Creative Industry Digital Grant",
+            eyebrow: "SDGs 4, 5 and 8",
+            color: "#c5192d",
+            body: ["Provided laptops, an iPhone and a ₦1,000,000 grant to empower content creators and digital entrepreneurs."],
+          },
+          {
+            title: 'Essay Competition on "Sustainable Development in Igboland"',
+            eyebrow: "SDGs 4 and 11",
+            color: "#fd9d24",
+            darkText: true,
+            body: ["Sponsored youth intellectual discourse and community engagement on sustainability goals."],
+          },
+          {
+            title: '"G" for the Girl Child Project',
+            eyebrow: "SDG 5",
+            color: "#ff3a21",
+            body: ["Promoted gender equality by equipping Igbo girls with digital-literacy and entrepreneurial skills to compete globally."],
+          },
+          {
+            title: "Nwaiha Women Development Center",
+            eyebrow: "SDGs 4, 8 and 11",
+            color: "#fdb713",
+            darkText: true,
+            body: ["Constructed a multi-use facility through crowdfunding to support women's education, skills training and community events."],
+          },
+          {
+            title: "Akabo Super League",
+            eyebrow: "SDGs 8 and 10",
+            color: "#dd1367",
+            body: ["Promoted grassroots sports as a pathway to international exposure and economic inclusion."],
+          },
+          {
+            title: "Educational Support",
+            eyebrow: "SDGs 1 and 4",
+            color: "#c5192d",
+            body: ["Sponsored First School Leaving and WAEC forms for 20 students and rehabilitated classroom blocks in Akabo Community School."],
+          },
+          {
+            title: "Aspire Leadership Masterclass",
+            eyebrow: "SDGs 4, 16 and 17",
+            color: "#00689d",
+            body: ["Delivered two weeks of intensive leadership training in partnership with the Iwanyanwu Foundation."],
+          },
+          {
+            title: "Akabo Cultural Heritage Display and Youth Carnival",
+            eyebrow: "SDG 11",
+            color: "#fd9d24",
+            darkText: true,
+            body: ["Celebrated and preserved local culture while fostering unity, creativity and youth engagement."],
+          },
+        ],
+      },
+      {
+        title: "Supporting Infrastructure for SDG Advancement",
+        body: [
+          "Beyond CSR, GProjects has invested in institutional frameworks that strengthen youth development, digital inclusion, construction capacity and long-term community impact.",
+        ],
+        subsections: [
+          {
+            title: "The Youth Development Centre",
+            body: ["A robust hub combining incubation labs, digital-skills training, design districts, SME parks and other development facilities."],
+          },
+          {
+            title: "The Digital Literacy Project",
+            body: [
+              "In partnership with Aspire Africa and the Imo State Government, this project trains young people in digital-economy skills, bridging the knowledge gap for the Fourth Industrial Revolution.",
+            ],
+          },
+          {
+            title: "The Building Academy & Master Craftsman Program",
+            body: [
+              "Equips both skilled and unskilled labour with modern construction, furniture-production and leadership skills while enforcing:",
+            ],
+            list: [
+              "Quality Assurance standards",
+              "Health, Safety and Environmental standards",
+              "Artisan certification",
+              "Modern construction practices",
+              "Professional leadership development",
+            ],
+          },
+        ],
+      },
+      {
+        title: "A Blueprint in Action",
+        body: [
+          "GProjects Limited's integration of smart technologies, environmental responsibility, inclusive leadership development and community engagement provides a tangible model for how the Sustainable Development Goals can be implemented locally with global relevance.",
+          "From healthcare and education to entrepreneurship and climate consciousness, GProjects has shown that true development is both strategic and inclusive.",
+          "As the world approaches 2030, the company's 80% SDG achievement milestone is not merely a benchmark - it is a call to action for the private sector to embrace sustainability, innovation and purpose.",
+        ],
+      },
+    ],
+    quote: {
+      body: "We believe every project should not only build structures but also build people, communities, and futures.",
+      attribution: "GProjects Limited",
+    },
+    cta: {
+      title: "Partner with GInitiative",
+      body: "Join GProjects Limited and GInitiative in expanding sustainable, inclusive and measurable development across Nigeria and Africa.",
+      primaryLabel: "Partner With GInitiative",
+      primaryHref: "mailto:ginitiative@gprojects.ng",
+      secondaryLabel: "Contact Us",
+      secondaryHref: "mailto:ginitiative@gprojects.ng",
+      contact: {
+        email: "ginitiative@gprojects.ng",
+        website: "www.gprojects.ng",
+        phone: "+234 816 493 6724",
+        closing: "GInitiative by GProjects Limited - Smart Solutions. Bold Results. Better Humanity.",
+      },
+    },
+    seo: {
+      title: "GProjects Sets Benchmark with GInitiative CSR Achievements | GInitiative News",
+      description:
+        "Discover how GProjects Limited is advancing approximately 80% of the 17 United Nations Sustainable Development Goals through GInitiative projects in education, health, youth development, entrepreneurship and infrastructure.",
+      image: blogAspireAfricaImg,
+      publishedTime: "2025-07-25",
+    },
+  },
+  "/blog/unlocking-the-future-digital-literacy-project": {
+    intro: [],
+    sections: [
+      {
+        title: "Introduction: Welcome to the Digital Revolution",
+        body: [
+          "We are living in an era where digital skills are no longer optional; they are essential.",
+          "From how we communicate and work to how we learn and create, the world is being reshaped by digital technologies.",
+          "Yet, in the heart of Africa, many young people are being left behind - not because they lack potential, but because they lack access.",
+          "This is the gap that the Digital Literacy Project, powered by GInitiative in partnership with Aspire Africa and the Imo State Government, is committed to bridging.",
+          "This article is an open invitation to young people across Nigeria and Africa to step into their future equipped with the right tools, the right training and the right mindset.",
+        ],
+      },
+      {
+        title: "What Is the Digital Literacy Project?",
+        body: [
+          "The Digital Literacy Project is a bold, youth-focused initiative under GProjects Limited's social impact arm, GInitiative.",
+          "Its mission is to train thousands of young people in the digital skills needed for success in the Fourth Industrial Revolution.",
+          "With a rapidly evolving global economy dominated by digital platforms, artificial intelligence, e-commerce, data science, social media and cloud computing, today's youth must be more than literate - they must be digitally literate.",
+          "By providing free-to-access training programmes, both online and on-site, the Digital Literacy Project enables young people to develop practical skills in:",
+        ],
+        list: [
+          "Computer operations and IT fundamentals",
+          "Graphic design and creative media",
+          "Digital marketing and content creation",
+          "Social media strategy and branding",
+          "E-commerce and online business",
+          "Programming and software tools",
+          "Cybersecurity basics",
+          "Digital financial literacy",
+        ],
+        note: "Whether you are a student, entrepreneur, creative professional or job seeker, these skills provide an important pathway towards participation in the digital economy.",
+      },
+      {
+        title: "Why Now? Understanding the Urgency",
+        body: [
+          "Nigeria is Africa's largest economy and has one of the youngest populations in the world. Yet a significant portion of Nigerian youth still lack the digital skills required to compete in an increasingly connected global economy.",
+          "This is not simply a skills gap - it is a survival gap.",
+          "With nearly every industry undergoing digital transformation, young people who are not properly equipped risk being left behind.",
+          "The Digital Literacy Project is not only about training. It is about activating a digitally ready generation that can:",
+        ],
+        list: [
+          "Create digital content",
+          "Launch technology startups",
+          "Access remote job markets",
+          "Solve local problems using global tools",
+          "Compete on global freelance and innovation platforms",
+        ],
+      },
+      {
+        title: "The GInitiative Ecosystem: More Than Just Training",
+        body: [
+          "The Digital Literacy Project is part of a broader strategy to build a sustainable youth-development ecosystem.",
+        ],
+        subsections: [
+          {
+            title: "The Youth Development Centre",
+            body: ["A full-scale development ecosystem that includes an incubation hub, SME parks, creative laboratories and vocational districts."],
+          },
+          {
+            title: "The Digital Youth Project",
+            body: ["Provides targeted training designed to upskill young people in rural and urban communities."],
+          },
+          {
+            title: "Master Craftsman & Building Academy",
+            body: ["Supports young people interested in digital construction tools, smart-building systems, modern craftsmanship and sustainable technologies."],
+          },
+        ],
+        note: "These are not isolated projects. They form a connected pathway through which training leads to practical experience, and practical experience creates opportunities for employment or entrepreneurship.",
+      },
+      {
+        title: "Digital Stories: Real Youth, Real Transformation",
+        body: [],
+        quotes: [
+          {
+            body: "I had never touched a laptop before joining the Digital Literacy Project. Today, I manage social media pages for three small businesses and make money from home. It changed my life.",
+            attribution: "Chioma, 23, Owerri",
+          },
+          {
+            body: "The course on graphic design opened my eyes. I now work as a freelancer on Fiverr and Upwork. I also teach younger boys in my community.",
+            attribution: "Ifeanyi, 19, Umuahia",
+          },
+        ],
+        note: "These stories demonstrate how access to relevant tools and practical skills can support meaningful transformation.",
+      },
+      {
+        title: "Key Project Features",
+        body: [],
+        subsections: [
+          {
+            title: "Hybrid Learning Model",
+            body: ["Combines virtual learning with physical training centres."],
+          },
+          {
+            title: "Globally Recognised Certifications",
+            body: ["Provides certification opportunities through relevant training and institutional partnerships."],
+          },
+          {
+            title: "Mentorship and Peer Support",
+            body: ["Connects participants with industry mentors, facilitators and fellow learners."],
+          },
+          {
+            title: "Innovation Challenges",
+            body: ["Creates opportunities for young people to participate in digital-solution pitch competitions and practical challenges."],
+          },
+          {
+            title: "Employment Linkages",
+            body: ["Connects graduates with internships, freelance opportunities, digital job boards and relevant career pathways."],
+          },
+        ],
+      },
+      {
+        title: "Join the Movement: How You Can Get Involved",
+        body: [
+          "Are you a young person looking to improve your digital skills and expand your opportunities?",
+        ],
+        orderedList: [
+          "Register for the next Digital Literacy Bootcamp.",
+          "Choose your preferred training pathway, such as design, e-commerce, social media, coding or another available programme.",
+          "Attend the training sessions, complete the required projects and earn the relevant certification where available.",
+          "Join the GInitiative digital network for job opportunities, funding information and ongoing mentorship.",
+        ],
+      },
+      {
+        title: "Calling All Partners and Sponsors",
+        body: [
+          "The Digital Literacy Project cannot achieve its full potential alone.",
+          "It welcomes support from:",
+        ],
+        list: [
+          "Technology companies willing to donate equipment and software licences",
+          "NGOs and foundations willing to fund training cohorts",
+          "Professionals willing to volunteer their time and expertise as mentors",
+          "Media partners willing to expand awareness",
+          "Government institutions willing to support expansion into additional regions",
+        ],
+        note: "Your support can equip one more young person, build one more startup, bridge one more community and change one more future.",
+      },
+      {
+        title: "Final Thoughts: A Digital Legacy in Motion",
+        body: [
+          "The Digital Literacy Project is more than a programme - it is a legacy.",
+          "It represents a pathway towards building a nation of innovators, creators, builders and thinkers who will shape the Africa of tomorrow.",
+          "If you are a young person, your future starts here.",
+          "If you are a supporter of development, your opportunity to create impact starts now.",
+          "Together, we can help ensure that no young person is left behind in the digital race.",
+        ],
+      },
+    ],
+    cta: {
+      title: "Ready to Activate Your Digital Potential?",
+      body: "Register for the next Digital Literacy Project training session or contact GInitiative to learn about sponsorship, volunteering and partnership opportunities.",
+      primaryLabel: "Register for Training",
+      primaryHref: "mailto:ginitiative@gprojects.ng?subject=Digital%20Literacy%20Project%20Registration",
+      secondaryLabel: "Partner With GInitiative",
+      secondaryHref: "mailto:ginitiative@gprojects.ng?subject=Digital%20Literacy%20Project%20Partnership",
+      contact: {
+        email: "ginitiative@gprojects.ng",
+        website: "www.gprojects.ng",
+        phone: "",
+        closing: "GInitiative - Empowering Youth. Enabling Futures.",
+      },
+    },
+    seo: {
+      title: "Unlocking the Future: GInitiative's Digital Literacy Project | GInitiative News",
+      description:
+        "Discover how GInitiative's Digital Literacy Project, in partnership with Aspire Africa and the Imo State Government, is equipping young people with practical skills for employment, entrepreneurship and participation in the digital economy.",
+      image: blogDigitalLiteracyImg,
+      publishedTime: "2025-07-25",
+    },
+  },
   "/blog/what-clients-should-know-before-starting-a-construction-project": {
     intro: [
       "Starting a construction project is exciting. For many clients, it represents years of planning, investment, savings, business growth, family expansion, or long-term real estate ambition. But one of the biggest mistakes clients make is assuming that a project begins when workers arrive on site.",
@@ -1840,6 +2635,56 @@ function ServiceIcon({ name }: { name: string }) {
   }
 }
 
+function CoreValueIcon({ name }: { name: string }) {
+  const commonProps = {
+    width: 28,
+    height: 28,
+    viewBox: "0 0 28 28",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "heritage":
+      return (
+        <svg {...commonProps}>
+          <path d="M5 24h18" />
+          <path d="M7 21V11l7-5 7 5v10" />
+          <path d="M10 21v-6h8v6" />
+          <path d="M10 12h8" />
+        </svg>
+      );
+    case "innovation":
+      return (
+        <svg {...commonProps}>
+          <path d="M10 20h8" />
+          <path d="M11 24h6" />
+          <path d="M9 14a5 5 0 1 1 10 0c0 2-1.2 3.2-2.2 4.2-.6.6-.8 1.1-.8 1.8h-4c0-.7-.2-1.2-.8-1.8C10.2 17.2 9 16 9 14Z" />
+          <path d="M14 4V2" />
+          <path d="M22 8l1.4-1.4" />
+          <path d="M6 8 4.6 6.6" />
+        </svg>
+      );
+    case "sustainability":
+      return (
+        <svg {...commonProps}>
+          <path d="M6 17c7 0 12-4 15-11 2 8-1 16-9 16-3.3 0-6-2.1-6-5Z" />
+          <path d="M8 20c3-5 6-8 12-11" />
+          <path d="M7 10c-1.8 1.6-3 3.8-3 6.2 0 4.3 3.5 7.8 7.8 7.8 2.3 0 4.4-1 5.8-2.6" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...commonProps}>
+          <path d="M5 14.5 11 20 23 8" />
+          <path d="M6 23h16" />
+          <path d="M8 5h12" />
+        </svg>
+      );
+  }
+}
+
 function WhyIcon({ name }: { name: string }) {
   const commonProps = {
     width: 56,
@@ -1897,7 +2742,7 @@ function WhyIcon({ name }: { name: string }) {
   }
 }
 
-function AboutServicesPage() {
+function AboutPage() {
   return (
     <>
       <section id="top" className="subpage-hero about-services-hero">
@@ -1941,6 +2786,32 @@ function AboutServicesPage() {
         </div>
       </section>
 
+      <LeadershipSection
+        variant="about"
+        image={ganiruOkoroImg}
+        calligraphyImage={ganiruCalligraphyImg}
+      />
+
+      <section className="section core-values-section" aria-labelledby="core-values-title">
+        <div className="container">
+          <div className="subpage-section-heading">
+            <span className="eyebrow">Core Values</span>
+            <h2 id="core-values-title">The principles behind the work.</h2>
+          </div>
+          <div className="core-values-grid">
+            {coreValues.map((value) => (
+              <article className="core-value-item" key={value.title}>
+                <div className="core-value-icon">
+                  <CoreValueIcon name={value.icon} />
+                </div>
+                <h3>{value.title}</h3>
+                <p>{value.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="section ecosystem-role-section">
         <div className="container">
           <div className="subpage-section-heading">
@@ -1971,6 +2842,34 @@ function AboutServicesPage() {
         </div>
       </section>
 
+    </>
+  );
+}
+
+function ServicesPage({ openProjectModal }: { openProjectModal: ProjectModalOpener }) {
+  return (
+    <>
+      <section id="top" className="subpage-hero services-page-hero">
+        <div className="container subpage-hero-grid">
+          <div className="subpage-hero-copy">
+            <span className="eyebrow">GProjects Services</span>
+            <h1>Structured solutions for every stage of delivery.</h1>
+            <p>
+              GProjects supports clients across architecture, construction, project management, finance, administration, technology and bespoke delivery needs.
+            </p>
+            <p>
+              Each service is designed to make projects clearer, safer, better coordinated and easier to manage from early planning through handover.
+            </p>
+          </div>
+
+          <div className="subpage-hero-media" aria-hidden="true">
+            <div><img src={pageImages.construction} alt="" /></div>
+            <div><img src={blogProjectManagementImg} alt="" /></div>
+            <div><img src={pageImages.completedInstitution} alt="" /></div>
+          </div>
+        </div>
+      </section>
+
       <section id="full-services" className="section service-detail-section">
         <div className="container">
           <div className="subpage-section-heading subpage-section-heading--center">
@@ -1995,16 +2894,21 @@ function AboutServicesPage() {
                     <strong>Useful BuildIT connection:</strong>
                     <small>{service.connection}</small>
                   </div>
-                  <a href="#contact" className="service-detail-link">
+                  <button
+                    type="button"
+                    className="service-detail-link"
+                    onClick={(event) =>
+                      openProjectModal(getProjectModalPreset(service.title), service.title, event.currentTarget)
+                    }
+                  >
                     Start a Project <span aria-hidden="true">&rarr;</span>
-                  </a>
+                  </button>
                 </div>
               </article>
             ))}
           </div>
         </div>
       </section>
-
     </>
   );
 }
@@ -2204,6 +3108,8 @@ function WorkforcePage() {
 
 function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [isGrillPromoActive, setIsGrillPromoActive] = useState(false);
   const categories = Array.from(new Set(blogItems.map((item) => item.category)));
   const normalizeSearchText = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const getSearchWords = (value: string) => normalizeSearchText(value).split(" ").filter(Boolean);
@@ -2301,6 +3207,42 @@ function BlogPage() {
   const liveSearchMatches = normalizedQuery ? rankedBlogItems.slice(0, 5) : [];
   const recentPosts = filteredBlogItems.slice(0, 4);
 
+  useEffect(() => {
+    let isActive = true;
+    const articleItems = blogItems.filter((item) => item.type === "Blog Article");
+
+    Promise.all(
+      articleItems.map(async (item) => {
+        const slug = getBlogSlug(item.href);
+        try {
+          const response = await fetch(`/api/comments/list.php?articleSlug=${encodeURIComponent(slug)}`, {
+            headers: { Accept: "application/json" },
+          });
+          const data = await response.json();
+          return [item.href, Array.isArray(data.comments) ? data.comments.length : 0] as const;
+        } catch {
+          return [item.href, 0] as const;
+        }
+      }),
+    ).then((counts) => {
+      if (isActive) {
+        setCommentCounts(Object.fromEntries(counts));
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const promoTimer = window.setInterval(() => {
+      setIsGrillPromoActive((current) => !current);
+    }, 9000);
+
+    return () => window.clearInterval(promoTimer);
+  }, []);
+
   return (
     <section id="top" className="blog-index-section">
       <div className="container blog-layout">
@@ -2314,12 +3256,16 @@ function BlogPage() {
                 rel={item.external ? "noopener noreferrer" : undefined}
                 aria-label={item.title}
               >
-                <img src={item.image} alt="" loading="lazy" />
+                <img src={item.image} alt={getBlogImageAlt(item)} loading="lazy" />
               </a>
               <div className="blog-post-copy">
                 <div className="blog-post-tags">
                   <span>{item.category}</span>
                   <span>{item.type}</span>
+                </div>
+                <div className="blog-post-meta-line">
+                  <span>{item.date}</span>
+                  <span>{getCommentCountText(commentCounts[item.href] ?? 0)}</span>
                 </div>
                 <h2>{item.title}</h2>
                 <p>{item.excerpt}</p>
@@ -2372,7 +3318,7 @@ function BlogPage() {
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
                     >
-                      <img src={item.image} alt="" loading="lazy" />
+                      <img src={item.image} alt={getBlogImageAlt(item)} loading="lazy" />
                       <span>
                         <small>{item.category}</small>
                         {item.title}
@@ -2398,7 +3344,7 @@ function BlogPage() {
                   target={item.external ? "_blank" : undefined}
                   rel={item.external ? "noopener noreferrer" : undefined}
                 >
-                  <img src={item.image} alt="" loading="lazy" />
+                  <img src={item.image} alt={getBlogImageAlt(item)} loading="lazy" />
                   <span>
                     <strong>{item.title}</strong>
                     <small>{item.date}</small>
@@ -2418,21 +3364,562 @@ function BlogPage() {
             </div>
           </div>
 
-          <blockquote className="blog-quote-card">
-            <p>
-              Structured delivery is not just about building; it is about creating clarity, accountability, and systems that help real-sector projects move.
-            </p>
-            <cite>GProjects Insights</cite>
-          </blockquote>
+          <div className="blog-sidebar-feature" aria-live="polite">
+            {isGrillPromoActive ? (
+              <aside className="blog-grill-card" aria-label="Special Grill-IT promotion">
+                <img src={blogGrillItImg} alt="" aria-hidden="true" />
+                <div>
+                  <h2>Special Grill-IT</h2>
+                  <p>Order a fresh grilled chicken. Powered by GProjects Grill-IT.</p>
+                  <p>All birds and eggs are produced in-house from the GProjects farm.</p>
+                  <a href={PHONE_HREF}>Call Us Now</a>
+                </div>
+              </aside>
+            ) : (
+              <blockquote className="blog-quote-card">
+                <p>
+                  Structured delivery is not just about building; it is about creating clarity, accountability, and systems that help real-sector projects move.
+                </p>
+                <cite>GProjects Insights</cite>
+              </blockquote>
+            )}
+          </div>
         </aside>
       </div>
     </section>
   );
 }
 
-function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
+type AdminComment = {
+  id: number;
+  articleSlug: string;
+  articleTitle: string;
+  name: string;
+  email: string;
+  website: string | null;
+  message: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+};
+
+function AdminCommentsPage() {
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [csrfToken, setCsrfToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [comments, setComments] = useState<AdminComment[]>([]);
+  const [articles, setArticles] = useState<Record<string, string>>(
+    Object.fromEntries(blogItems.filter((item) => item.type === "Blog Article").map((item) => [getBlogSlug(item.href), item.title])),
+  );
+  const [filters, setFilters] = useState({
+    status: "pending",
+    articleSlug: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+  const [feedback, setFeedback] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
+
+  const loadComments = useCallback(async () => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    const response = await fetch(`/api/admin/comments/list.php?${params.toString()}`, {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message ?? "Unable to load comments.");
+    }
+
+    setComments(Array.isArray(data.comments) ? data.comments : []);
+    if (data.articles && typeof data.articles === "object") {
+      setArticles(data.articles);
+    }
+    if (data.csrfToken) {
+      setCsrfToken(data.csrfToken);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetch("/api/admin/auth/session.php", {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (!isActive) {
+          return;
+        }
+        setIsAuthenticated(Boolean(data.authenticated));
+        setCsrfToken(data.csrfToken ?? "");
+      })
+      .catch(() => {
+        if (isActive) {
+          setFeedback("Admin session could not be checked.");
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsCheckingSession(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const loadTimer = window.setTimeout(() => {
+      loadComments().catch((error: Error) => setFeedback(error.message));
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
+  }, [isAuthenticated, loadComments]);
+
+  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsBusy(true);
+    setFeedback("");
+
+    try {
+      const response = await fetch("/api/admin/auth/login.php", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message ?? "Login failed.");
+      }
+      setPassword("");
+      setIsAuthenticated(true);
+      setCsrfToken(data.csrfToken ?? "");
+      setFeedback("Signed in.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Login failed.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const postAdminAction = async (url: string, body: Record<string, unknown>) => {
+    setIsBusy(true);
+    setFeedback("");
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message ?? "Action failed.");
+      }
+      setFeedback(data.message ?? "Done.");
+      await loadComments();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Action failed.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsBusy(true);
+    setFeedback("");
+
+    try {
+      await fetch("/api/admin/auth/logout.php", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        body: JSON.stringify({}),
+      });
+    } finally {
+      setIsAuthenticated(false);
+      setCsrfToken("");
+      setComments([]);
+      setIsBusy(false);
+      setFeedback("Signed out.");
+    }
+  };
+
+  const deleteComment = (comment: AdminComment) => {
+    const confirmed = window.confirm(`Delete comment #${comment.id} from ${comment.name}? This cannot be undone.`);
+    if (confirmed) {
+      void postAdminAction("/api/admin/comments/delete.php", { id: comment.id });
+    }
+  };
+
+  return (
+    <section id="top" className="admin-comments-page">
+      <div className="container">
+        <div className="admin-comments-heading">
+          <span className="eyebrow">CMS</span>
+          <h1>Comments Moderation</h1>
+          <p>Review pending blog comments, approve public comments, reject unsuitable submissions, or delete spam.</p>
+        </div>
+
+        {feedback ? <p className="admin-feedback" aria-live="polite">{feedback}</p> : null}
+
+        {isCheckingSession ? (
+          <p className="admin-loading">Checking admin session...</p>
+        ) : !isAuthenticated ? (
+          <form className="admin-login-panel" onSubmit={submitLogin}>
+            <label>
+              Username
+              <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            <button type="submit" className="button button--forest" disabled={isBusy}>
+              {isBusy ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+        ) : (
+          <>
+            <div className="admin-toolbar">
+              <div className="admin-filters" aria-label="Comment filters">
+                <label>
+                  Status
+                  <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="all">All comments</option>
+                  </select>
+                </label>
+                <label>
+                  Article
+                  <select
+                    value={filters.articleSlug}
+                    onChange={(event) => setFilters((current) => ({ ...current, articleSlug: event.target.value }))}
+                  >
+                    <option value="">All articles</option>
+                    {Object.entries(articles).map(([slug, title]) => (
+                      <option value={slug} key={slug}>{title}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  From
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(event) => setFilters((current) => ({ ...current, dateFrom: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  To
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(event) => setFilters((current) => ({ ...current, dateTo: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="admin-toolbar-actions">
+                <button type="button" className="button-link button-link--dark" onClick={() => void loadComments()} disabled={isBusy}>
+                  Refresh
+                </button>
+                <button type="button" className="button-link button-link--dark" onClick={() => void logout()} disabled={isBusy}>
+                  Sign Out
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-comments-list">
+              {comments.length ? (
+                comments.map((comment) => (
+                  <article className="admin-comment-card" key={comment.id}>
+                    <div className="admin-comment-meta">
+                      <strong>{comment.name}</strong>
+                      <a href={`mailto:${comment.email}`}>{comment.email}</a>
+                      {comment.website ? <a href={comment.website} target="_blank" rel="noopener noreferrer">{comment.website}</a> : null}
+                      <span>{new Date(comment.createdAt).toLocaleString()}</span>
+                      <em className={`admin-status admin-status--${comment.status}`}>{comment.status}</em>
+                    </div>
+                    <h2>{comment.articleTitle || comment.articleSlug}</h2>
+                    <p>{comment.message}</p>
+                    <div className="admin-comment-actions">
+                      <button
+                        type="button"
+                        onClick={() => void postAdminAction("/api/admin/comments/update-status.php", { id: comment.id, status: "approved" })}
+                        disabled={isBusy || comment.status === "approved"}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void postAdminAction("/api/admin/comments/update-status.php", { id: comment.id, status: "rejected" })}
+                        disabled={isBusy || comment.status === "rejected"}
+                      >
+                        Reject
+                      </button>
+                      <button type="button" onClick={() => deleteComment(comment)} disabled={isBusy}>
+                        Delete
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="admin-empty-state">No comments match these filters.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+type PublicBlogComment = {
+  id: number;
+  name: string;
+  message: string;
+  createdAt: string;
+};
+
+function BlogComments({ articleSlug, onCountChange }: { articleSlug: string; onCountChange?: (count: number) => void }) {
+  const [comments, setComments] = useState<PublicBlogComment[]>([]);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    website: "",
+    message: "",
+    company: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const commentCountText =
+    comments.length === 0 ? "No Comments" : comments.length === 1 ? "1 Comment" : `${comments.length} Comments`;
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetch(`/api/comments/list.php?articleSlug=${encodeURIComponent(articleSlug)}`, {
+      headers: { Accept: "application/json" },
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data) => {
+        if (isActive && Array.isArray(data.comments)) {
+          setComments(data.comments);
+          onCountChange?.(data.comments.length);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setComments([]);
+          onCountChange?.(0);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [articleSlug, onCountChange]);
+
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.name.trim()) {
+      nextErrors.name = "Enter your name.";
+    }
+    if (!emailPattern.test(formData.email.trim())) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+    if (formData.website.trim()) {
+      try {
+        new URL(formData.website.trim());
+      } catch {
+        nextErrors.website = "Enter a valid website URL, including https://.";
+      }
+    }
+    if (!formData.message.trim()) {
+      nextErrors.message = "Enter your comment.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const submitComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFeedback("");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/comments/submit.php", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          articleSlug,
+          ...formData,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setErrors(data.errors ?? {});
+        setFeedback(data.message ?? "Your comment could not be submitted. Please try again.");
+        return;
+      }
+
+      setFeedback("Thank you. Your comment has been submitted for review.");
+      setFormData({ name: "", email: "", website: "", message: "", company: "" });
+      setErrors({});
+    } catch {
+      setFeedback("Your comment could not be submitted. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const updateCommentField = (field: keyof typeof formData, value: string) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: "" }));
+  };
+
+  return (
+    <section className="blog-comments-section" aria-labelledby="blog-comments-title">
+      <h2 id="blog-comments-title">{commentCountText}</h2>
+      {comments.length ? (
+        <div className="blog-comments-list">
+          {comments.map((comment) => (
+            <article className="blog-comment" key={comment.id}>
+              <strong>{comment.name}</strong>
+              <time dateTime={comment.createdAt}>
+                {new Date(comment.createdAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+              <p>{comment.message}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="blog-no-comments">No Comments</p>
+      )}
+
+      <form className="blog-comment-form" onSubmit={submitComment} noValidate>
+        <h2>Leave a Reply</h2>
+        <p>Your email address will not be published. Comments are reviewed before appearing publicly.</p>
+        <label className="blog-comment-honeypot">
+          Company
+          <input
+            tabIndex={-1}
+            autoComplete="off"
+            value={formData.company}
+            onChange={(event) => updateCommentField("company", event.target.value)}
+          />
+        </label>
+        <div className="blog-comment-form-grid">
+          <label>
+            Name *
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(event) => updateCommentField("name", event.target.value)}
+              aria-invalid={Boolean(errors.name)}
+            />
+            {errors.name ? <span>{errors.name}</span> : null}
+          </label>
+          <label>
+            Email *
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(event) => updateCommentField("email", event.target.value)}
+              aria-invalid={Boolean(errors.email)}
+            />
+            {errors.email ? <span>{errors.email}</span> : null}
+          </label>
+          <label className="blog-comment-form-wide">
+            Website
+            <input
+              type="url"
+              value={formData.website}
+              onChange={(event) => updateCommentField("website", event.target.value)}
+              aria-invalid={Boolean(errors.website)}
+            />
+            {errors.website ? <span>{errors.website}</span> : null}
+          </label>
+          <label className="blog-comment-form-wide">
+            Message *
+            <textarea
+              value={formData.message}
+              onChange={(event) => updateCommentField("message", event.target.value)}
+              aria-invalid={Boolean(errors.message)}
+            />
+            {errors.message ? <span>{errors.message}</span> : null}
+          </label>
+        </div>
+        {feedback ? <p className="blog-comment-feedback" aria-live="polite">{feedback}</p> : null}
+        <button type="submit" className="button button--forest" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function BlogArticlePage({
+  post,
+  openProjectModal,
+}: {
+  post: (typeof blogItems)[number];
+  openProjectModal: ProjectModalOpener;
+}) {
   const articleDetails = blogArticleDetails[post.href];
   const postIndex = blogItems.findIndex((item) => item.href === post.href);
+  const [approvedCommentCount, setApprovedCommentCount] = useState(0);
   const previousPost = postIndex > 0 ? blogItems[postIndex - 1] : undefined;
   const nextPost = postIndex < blogItems.length - 1 ? blogItems[postIndex + 1] : undefined;
   const relatedPosts = blogItems
@@ -2440,6 +3927,71 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
     .slice(0, 2);
   const shareUrl = encodeURIComponent(`${window.location.origin}${post.href}`);
   const shareTitle = encodeURIComponent(post.title);
+  const updateApprovedCommentCount = useCallback((count: number) => {
+    setApprovedCommentCount(count);
+  }, []);
+
+  useEffect(() => {
+    const title = articleDetails?.seo?.title ?? `${post.title} | GProjects Blog`;
+    const description = articleDetails?.seo?.description ?? post.excerpt;
+    const url = `${window.location.origin}${post.href}`;
+    const image = articleDetails?.seo?.image ?? post.image;
+    const imageUrl = image.startsWith("http") ? image : new URL(image, window.location.origin).toString();
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+
+    document.title = title;
+    canonical.href = url;
+    setMetaTag('meta[name="description"]', "name", "description", description);
+    setMetaTag('meta[property="og:title"]', "property", "og:title", title);
+    setMetaTag('meta[property="og:description"]', "property", "og:description", description);
+    setMetaTag('meta[property="og:image"]', "property", "og:image", imageUrl);
+    setMetaTag('meta[property="og:url"]', "property", "og:url", url);
+    setMetaTag('meta[property="og:type"]', "property", "og:type", "article");
+    setMetaTag('meta[property="article:published_time"]', "property", "article:published_time", articleDetails?.seo?.publishedTime ?? post.date);
+    setMetaTag('meta[property="article:section"]', "property", "article:section", post.category);
+    setMetaTag('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
+    setMetaTag('meta[name="twitter:title"]', "name", "twitter:title", title);
+    setMetaTag('meta[name="twitter:description"]', "name", "twitter:description", description);
+    setMetaTag('meta[name="twitter:image"]', "name", "twitter:image", imageUrl);
+
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      headline: post.title,
+      description,
+      datePublished: articleDetails?.seo?.publishedTime ?? post.date,
+      image: [imageUrl],
+      articleSection: post.category,
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": url,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "GProjects Limited",
+        logo: {
+          "@type": "ImageObject",
+          url: new URL(logoAsset, window.location.origin).toString(),
+        },
+      },
+    };
+    let schemaScript = document.head.querySelector<HTMLScriptElement>("#blog-article-structured-data");
+
+    if (!schemaScript) {
+      schemaScript = document.createElement("script");
+      schemaScript.id = "blog-article-structured-data";
+      schemaScript.type = "application/ld+json";
+      document.head.appendChild(schemaScript);
+    }
+
+    schemaScript.textContent = JSON.stringify(structuredData);
+  }, [articleDetails, post]);
 
   return (
     <>
@@ -2450,10 +4002,15 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
             <img src={logoAsset} alt="" />
             <span>GProjects</span>
             <span>{post.date}</span>
+            <span>{getCommentCountText(approvedCommentCount)}</span>
             <span>{post.category}</span>
           </div>
-          <div className="blog-article-featured-image">
-            <img src={post.image} alt="" />
+          <div
+            className={`blog-article-featured-image ${
+              BLOG_CONTAINED_IMAGE_ROUTES.has(post.href) ? "blog-article-featured-image--contain" : ""
+            } ${post.href === "/blog/gprojects-sets-benchmark-with-ginitiative-csr-achievements" ? "blog-article-featured-image--logo" : ""}`}
+          >
+            <img src={post.image} alt={getBlogImageAlt(post)} />
           </div>
           <p>{post.excerpt}</p>
         </div>
@@ -2480,6 +4037,70 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
                       ))}
                     </ul>
                   ) : null}
+                  {section.orderedList ? (
+                    <ol className="blog-article-ordered-list">
+                      {section.orderedList.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ol>
+                  ) : null}
+                  {section.subsections ? (
+                    <div
+                      className={`blog-article-subsections ${
+                        section.subsections.every((subsection) => !subsection.eyebrow)
+                          ? "blog-article-subsections--plain"
+                          : ""
+                      }`}
+                    >
+                      {section.subsections.map((subsection) => (
+                        <section
+                          className={subsection.darkText ? "blog-article-subsection-card--dark-text" : undefined}
+                          key={subsection.title}
+                          style={
+                            subsection.color
+                              ? ({
+                                  "--sdg-card": subsection.color,
+                                  "--sdg-color": subsection.color,
+                                } as CSSProperties)
+                              : undefined
+                          }
+                        >
+                          {subsection.eyebrow ? <span>{subsection.eyebrow}</span> : null}
+                          <h3>{subsection.title}</h3>
+                          {subsection.body.map((paragraph) => (
+                            <p key={paragraph}>{paragraph}</p>
+                          ))}
+                          {subsection.list ? (
+                            <ul>
+                              {subsection.list.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </section>
+                      ))}
+                    </div>
+                  ) : null}
+                  {section.quotes ? (
+                    <div className="blog-article-testimonials">
+                      {section.quotes.map((quote) => (
+                        <blockquote key={quote.attribution}>
+                          <p>{quote.body}</p>
+                          <cite>{quote.attribution}</cite>
+                        </blockquote>
+                      ))}
+                    </div>
+                  ) : null}
+                  {section.strengths ? (
+                    <div className="blog-article-strengths">
+                      {section.strengths.map((strength) => (
+                        <article key={strength.title}>
+                          <h3>{strength.title}</h3>
+                          <p>{strength.body}</p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
                   {section.note ? <p className="blog-article-note">{section.note}</p> : null}
                   {index === 1 && articleDetails.tip ? (
                     <aside className="blog-tip-box">
@@ -2490,22 +4111,69 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
                 </div>
               ))}
 
+              {articleDetails.quote ? (
+                <blockquote className="blog-article-quote">
+                  <p>{articleDetails.quote.body}</p>
+                  <cite>{articleDetails.quote.attribution}</cite>
+                </blockquote>
+              ) : null}
+
               {articleDetails.cta ? (
                 <div className="blog-article-cta">
                   <h2>{articleDetails.cta.title}</h2>
                   <p>{articleDetails.cta.body}</p>
+                  {articleDetails.cta.actionItems ? (
+                    <ul className="blog-article-cta-list">
+                      {articleDetails.cta.actionItems.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {articleDetails.cta.contact ? (
+                    <div className="blog-article-contact">
+                      {articleDetails.cta.showContactLinks ? (
+                        <>
+                          <a href={`mailto:${articleDetails.cta.contact.email}`}>{articleDetails.cta.contact.email}</a>
+                          <a href={siteHref("/")}>{articleDetails.cta.contact.website}</a>
+                        </>
+                      ) : null}
+                      <strong>{articleDetails.cta.contact.closing}</strong>
+                    </div>
+                  ) : null}
                   <div>
-                    <a
-                      href={siteHref(articleDetails.cta.primaryHref ?? "/#contact")}
-                      className="button button--forest"
-                      target={articleDetails.cta.primaryExternal ? "_blank" : undefined}
-                      rel={articleDetails.cta.primaryExternal ? "noopener noreferrer" : undefined}
-                    >
-                      {articleDetails.cta.primaryLabel ?? "Start a Project"} <span aria-hidden="true">&rarr;</span>
-                    </a>
-                    <a href={siteHref(articleDetails.cta.secondaryHref ?? "/services#full-services")} className="button-link button-link--dark">
-                      {articleDetails.cta.secondaryLabel ?? "Explore Our Services"}
-                    </a>
+                    {articleDetails.cta.primaryHref && /^(https?:|mailto:|tel:)/.test(articleDetails.cta.primaryHref) ? (
+                      <a
+                        href={siteHref(articleDetails.cta.primaryHref)}
+                        className="button button--forest"
+                        target={articleDetails.cta.primaryExternal || articleDetails.cta.primaryHref.startsWith("http") ? "_blank" : undefined}
+                        rel={articleDetails.cta.primaryExternal || articleDetails.cta.primaryHref.startsWith("http") ? "noopener noreferrer" : undefined}
+                      >
+                        {articleDetails.cta.primaryLabel ?? "Start a Project"} <span aria-hidden="true">&rarr;</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button button--forest"
+                        onClick={(event) =>
+                          openProjectModal("", articleDetails.cta?.primaryLabel ?? "Start a Project", event.currentTarget)
+                        }
+                      >
+                        {articleDetails.cta.primaryLabel ?? "Start a Project"} <span aria-hidden="true">&rarr;</span>
+                      </button>
+                    )}
+                    {articleDetails.cta.secondaryLabel === "Start a Project" ? (
+                      <button
+                        type="button"
+                        className="button-link button-link--dark"
+                        onClick={(event) => openProjectModal("", "Start a Project", event.currentTarget)}
+                      >
+                        Start a Project
+                      </button>
+                    ) : (
+                      <a href={siteHref(articleDetails.cta.secondaryHref ?? "/services#full-services")} className="button-link button-link--dark">
+                        {articleDetails.cta.secondaryLabel ?? "Explore Our Services"}
+                      </a>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -2535,10 +4203,18 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
           )}
 
           <div className="blog-share-row" aria-label="Share article">
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">f</a>
-            <a href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`} target="_blank" rel="noopener noreferrer" aria-label="Share on X">x</a>
-            <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${shareUrl}&title=${shareTitle}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">in</a>
-            <a href={`mailto:?subject=${shareTitle}&body=${shareUrl}`} aria-label="Share by email">@</a>
+            <a href={`mailto:${EMAIL}?subject=${shareTitle}&body=${shareUrl}`} aria-label="Share this article by email">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16v12H4z" />
+                <path d="m4 7 8 6 8-6" />
+              </svg>
+            </a>
+            <a href={PHONE_HREF} aria-label="Call GProjects about this article">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6.6 10.8c1.6 3.1 3.5 5 6.6 6.6l2.2-2.2c.3-.3.8-.4 1.2-.3 1.3.4 2.6.6 4 .6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.9 21 3 13.1 3 3.4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.4.2 2.8.6 4 .1.4 0 .8-.3 1.2l-2.2 2.2Z" />
+              </svg>
+            </a>
+            <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${shareUrl}&title=${shareTitle}`} target="_blank" rel="noopener noreferrer" aria-label="Share this article on LinkedIn">in</a>
           </div>
 
           <nav className="blog-post-navigation" aria-label="Blog post navigation">
@@ -2548,7 +4224,7 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
                 target={previousPost.external ? "_blank" : undefined}
                 rel={previousPost.external ? "noopener noreferrer" : undefined}
               >
-                <img src={previousPost.image} alt="" />
+                <img src={previousPost.image} alt={getBlogImageAlt(previousPost)} />
                 <span>
                   <small>Previous Post</small>
                   <strong>{previousPost.title}</strong>
@@ -2565,10 +4241,12 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
                   <small>Next Post</small>
                   <strong>{nextPost.title}</strong>
                 </span>
-                <img src={nextPost.image} alt="" />
+                <img src={nextPost.image} alt={getBlogImageAlt(nextPost)} />
               </a>
             ) : <span />}
           </nav>
+
+          <BlogComments articleSlug={getBlogSlug(post.href)} onCountChange={updateApprovedCommentCount} />
         </div>
       </article>
 
@@ -2583,7 +4261,7 @@ function BlogArticlePage({ post }: { post: (typeof blogItems)[number] }) {
                 target={item.external ? "_blank" : undefined}
                 rel={item.external ? "noopener noreferrer" : undefined}
               >
-                <img src={item.image} alt="" loading="lazy" />
+                <img src={item.image} alt={getBlogImageAlt(item)} loading="lazy" />
                 <strong>{item.title}</strong>
               </a>
             ))}
@@ -2720,6 +4398,11 @@ function App() {
     hash: window.location.hash,
   }));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeGInitiativeImpactIndex, setActiveGInitiativeImpactIndex] = useState(0);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [projectModalPreset, setProjectModalPreset] = useState("");
+  const [projectModalTrigger, setProjectModalTrigger] = useState("Start a Project");
+  const lastProjectTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const syncLocation = () => {
@@ -2747,11 +4430,13 @@ function App() {
       ? "/"
       : hashParts[0] === "blog" && hashParts.length > 1
         ? `/blog/${hashParts.slice(1).join("/")}`
+        : hashParts[0] === "admin" && hashParts.length > 1
+          ? `/admin/${hashParts.slice(1).join("/")}`
         : `/${hashParts[0]}`
     : "";
   const hashTarget = hashParts[0] === "home"
     ? hashParts[1] ?? ""
-    : hashParts[0] === "services" || hashParts[0] === "projects" || hashParts[0] === "workforce"
+    : hashParts[0] === "about" || hashParts[0] === "services" || hashParts[0] === "projects" || hashParts[0] === "workforce"
       ? hashParts[1] ?? ""
       : "";
   const pathname = APP_BASE && locationState.pathname.startsWith(APP_BASE)
@@ -2759,20 +4444,50 @@ function App() {
     : locationState.pathname;
   const routedPath = hashRoutePath || pathname;
   const currentPath = BLOG_ROUTE_ALIASES[routedPath] ?? routedPath;
-  const isServicesPage = currentPath === "/services" || currentPath === "/about";
+  const isAboutPage = currentPath === "/about";
+  const isServicesPage = currentPath === "/services";
   const isWorkforcePage = currentPath === "/workforce";
   const isBlogPage = currentPath === "/blog";
   const isProjectsPage = currentPath === "/projects";
+  const isAdminCommentsPage = currentPath === "/admin/comments";
   const activeBlogPost = blogItems.find(
     (item) => item.type === "Blog Article" && item.href === currentPath,
   );
+  const activeGInitiativeImpact = gInitiativeImpactHighlights[activeGInitiativeImpactIndex];
+
+  const openProjectModal = (presetService = "", triggerLabel = "Start a Project", triggerElement?: HTMLElement) => {
+    setProjectModalPreset(presetService);
+    setProjectModalTrigger(triggerLabel);
+    lastProjectTriggerRef.current = triggerElement ?? null;
+    setIsMobileMenuOpen(false);
+    setIsProjectModalOpen(true);
+  };
+
+  const closeProjectModal = () => {
+    setIsProjectModalOpen(false);
+    window.setTimeout(() => lastProjectTriggerRef.current?.focus(), 0);
+  };
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    const menuCloseTimer = window.setTimeout(() => setIsMobileMenuOpen(false), 0);
+    return () => window.clearTimeout(menuCloseTimer);
   }, [currentPath, locationState.hash]);
 
   useEffect(() => {
-    const cardSelector = ".service-card, .why-partner-card, .buildit-link-list a, .workforce-opportunities-list li, .ecosystem-role-card, .service-detail-card, .subpage-why-card, .workforce-benefit-card, .workforce-step, .workforce-faq-list details, .blog-post-row, .blog-recent-item, .blog-quote-card, .portfolio-card, .project-showcase, .project-facts-panel";
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      return;
+    }
+
+    const impactTimer = window.setInterval(() => {
+      setActiveGInitiativeImpactIndex((current) => (current + 1) % gInitiativeImpactHighlights.length);
+    }, 4200);
+
+    return () => window.clearInterval(impactTimer);
+  }, []);
+
+  useEffect(() => {
+    const cardSelector = ".service-card, .why-partner-card, .buildit-link-list a, .workforce-opportunities-list li, .ecosystem-role-card, .core-value-item, .service-detail-card, .subpage-why-card, .workforce-benefit-card, .workforce-step, .workforce-faq-list details, .blog-post-row, .blog-recent-item, .blog-quote-card, .portfolio-card, .project-showcase, .project-facts-panel";
     const textSelector = [
       "main section:not(.hero-section) .eyebrow",
       "main section:not(.hero-section) h2",
@@ -2780,6 +4495,7 @@ function App() {
       "main section:not(.hero-section) p",
       "main section:not(.hero-section) .button",
       "main section:not(.hero-section) .button-link",
+      ".g-initiative-stat",
       ".footer-logo-row",
       ".footer li",
     ].join(", ");
@@ -2797,13 +4513,13 @@ function App() {
 
     document
       .querySelectorAll<HTMLElement>(
-        ".about-copy, .why-partner-copy, .buildit-ecosystem-intro > div:first-child, .workforce-opportunities-visual, .footer-brand-block, .footer-info-block, .subpage-hero-copy, .story-grid > div:first-child, .service-detail-image, .project-overview-grid > div:first-child",
+        ".about-copy, .why-partner-copy, .buildit-ecosystem-intro > div:first-child, .g-initiative-media, .workforce-opportunities-visual, .footer-brand-block, .footer-info-block, .footer-work-hours, .subpage-hero-copy, .story-grid > div:first-child, .service-detail-image, .project-overview-grid > div:first-child",
       )
       .forEach((element) => element.classList.add("reveal-left"));
 
     document
       .querySelectorAll<HTMLElement>(
-        ".about-image, .why-partner-grid, .buildit-ecosystem-copy, .workforce-opportunities-content, .footer-newsletter, .subpage-hero-media, .story-copy, .workforce-hero-visual, .workforce-tally-embed, .project-facts-panel",
+        ".about-image, .why-partner-grid, .buildit-ecosystem-copy, .g-initiative-content, .workforce-opportunities-content, .subpage-hero-media, .story-copy, .workforce-hero-visual, .workforce-tally-embed, .project-facts-panel",
       )
       .forEach((element) => element.classList.add("reveal-right"));
 
@@ -2834,7 +4550,7 @@ function App() {
     return () => {
       revealObserver.disconnect();
     };
-  }, []);
+  }, [currentPath]);
 
   useEffect(() => {
     const targetId = hashTarget || (!locationState.hash.startsWith("#/") ? locationState.hash.slice(1) : "");
@@ -2874,17 +4590,21 @@ function App() {
 
           <nav className="nav-links" aria-label="Primary navigation">
             <a href={siteHref("/")} onClick={() => setIsMobileMenuOpen(false)}>Home</a>
-            <a href={siteHref("/services")} onClick={() => setIsMobileMenuOpen(false)}>About</a>
-            <a href={siteHref("/services#full-services")} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+            <a href={siteHref("/about")} onClick={() => setIsMobileMenuOpen(false)}>About</a>
+            <a href={siteHref("/services")} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
             <a href={siteHref("/projects")} onClick={() => setIsMobileMenuOpen(false)}>Projects</a>
             <a href={siteHref("/blog")} onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
             <a href={BUILD_IT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>BuildIT</a>
             <a href={siteHref("/workforce")} onClick={() => setIsMobileMenuOpen(false)}>Workforce</a>
           </nav>
 
-          <a href="#contact" className="header-cta">
+          <button
+            type="button"
+            className="header-cta"
+            onClick={(event) => openProjectModal("", "Start a Project", event.currentTarget)}
+          >
             Start a Project
-          </a>
+          </button>
 
           <button
             type="button"
@@ -2901,14 +4621,18 @@ function App() {
       </header>
 
       <main>
-        {activeBlogPost ? (
-          <BlogArticlePage post={activeBlogPost} />
+        {isAdminCommentsPage ? (
+          <AdminCommentsPage />
+        ) : activeBlogPost ? (
+          <BlogArticlePage post={activeBlogPost} openProjectModal={openProjectModal} />
         ) : isBlogPage ? (
           <BlogPage />
         ) : isProjectsPage ? (
           <ProjectsPage />
+        ) : isAboutPage ? (
+          <AboutPage />
         ) : isServicesPage ? (
-          <AboutServicesPage />
+          <ServicesPage openProjectModal={openProjectModal} />
         ) : isWorkforcePage ? (
           <WorkforcePage />
         ) : (
@@ -2936,9 +4660,13 @@ function App() {
             </p>
 
             <div className="hero-actions rise-4">
-              <a href="#contact" className="button button--light">
+              <button
+                type="button"
+                className="button button--light"
+                onClick={(event) => openProjectModal("", "Start a Project", event.currentTarget)}
+              >
                 Start a Project <span aria-hidden="true">&rarr;</span>
-              </a>
+              </button>
               <a href="#contact" className="button-link button-link--light">
                 Request Company Profile
               </a>
@@ -2957,9 +4685,9 @@ function App() {
                 GProjects Limited was created to move ideas from vision into execution. It sits at the intersection of architecture, construction, project management, technology, workforce development, and enterprise delivery.
               </p>
               <p>
-                As part of the wider G Initiative ecosystem, GProjects creates systems for delivery, bringing structure to planning, procurement, site coordination, workforce alignment and long-term project value.
+                As the enterprise and project-delivery arm of the wider G Initiative ecosystem, GProjects brings structure to planning, procurement, site coordination, workforce alignment and long-term project value. It also provides institutional and technical support for G Initiative's social-impact and community-development programmes.
               </p>
-              <a href={siteHref("/services")} className="button button--forest">
+              <a href={siteHref("/about")} className="button button--forest">
                 Learn More <span aria-hidden="true">&rarr;</span>
               </a>
             </div>
@@ -2969,6 +4697,15 @@ function App() {
             </div>
           </div>
         </section>
+
+        <WebsiteStatsSection />
+
+        <LeadershipSection
+          variant="homepage"
+          image={ganiruOkoroImg}
+          calligraphyImage={ganiruCalligraphyImg}
+          storyHref={siteHref("/about#lead-architect")}
+        />
 
         <section id="services" className="section services-section">
           <div className="container">
@@ -3004,9 +4741,15 @@ function App() {
                 GProjects is structured for real-sector delivery — bringing together planning, construction, project coordination, workforce access, procurement support, financial visibility, and digital systems to help projects move from idea to execution with greater clarity and accountability.
               </p>
               <div className="why-partner-action">
-                <a href="#contact" className="button">
+                <button
+                  type="button"
+                  className="button"
+                  onClick={(event) =>
+                    openProjectModal(getProjectModalPreset("Partner With Us"), "Partner With Us", event.currentTarget)
+                  }
+                >
                     Partner With Us
-                </a>
+                </button>
               </div>
             </div>
 
@@ -3057,6 +4800,60 @@ function App() {
               <a href={BUILD_IT_URL} className="button button--forest" target="_blank" rel="noopener noreferrer">
                 View More <span aria-hidden="true">&rarr;</span>
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section id="g-initiative" className="section g-initiative-section">
+          <div className="container">
+            <div className="g-initiative-grid">
+              <div className="g-initiative-media" aria-label="G Initiative community food support">
+                <div className="g-initiative-image-stack" aria-hidden="true">
+                  <img
+                    className="g-initiative-photo"
+                    src={gInitiativeCommunityImg}
+                    alt=""
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+
+              <div className="g-initiative-content">
+                <span className="eyebrow">GProjects x G Initiative</span>
+                <div className="g-initiative-heading-row">
+                  <h2>Building projects. Strengthening communities.</h2>
+                  <img className="g-initiative-heading-mark" src={gInitiativeMark} alt="" aria-hidden="true" />
+                </div>
+                <p>
+                  GProjects Limited is the enterprise and project-delivery arm of the wider G Initiative ecosystem. Beyond architecture, construction and structured project delivery, the company supports a broader commitment to people, communities and sustainable development.
+                </p>
+                <p>
+                  Through G Initiative, this commitment is translated into social-impact and Corporate Social Responsibility programmes across food security, health, education, youth and women's empowerment, enterprise development, sports and sustainable communities.
+                </p>
+
+                <div className="g-initiative-impact-line" aria-label="G Initiative impact figures">
+                  <div className="g-initiative-stat">
+                    <strong>2015-2025</strong>
+                    <span>A decade of community impact</span>
+                  </div>
+                  <div className="g-initiative-stat g-initiative-stat--rotating" aria-live="polite">
+                    <strong key={`impact-value-${activeGInitiativeImpactIndex}`}>
+                      {activeGInitiativeImpact.value}
+                    </strong>
+                    <span key={`impact-body-${activeGInitiativeImpactIndex}`}>
+                      {activeGInitiativeImpact.body}
+                    </span>
+                  </div>
+                  <div className="g-initiative-stat">
+                    <strong>17 SDGs</strong>
+                    <span>A shared framework for sustainable development</span>
+                  </div>
+                </div>
+
+                <a href={G_INITIATIVE_URL} className="button button--forest" target="_blank" rel="noopener noreferrer">
+                  Explore G Initiative <span aria-hidden="true">&rarr;</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -3120,9 +4917,13 @@ function App() {
               Speak with GProjects about planning, construction, project management, workforce support, or BuildIT-powered delivery.
             </p>
             <div className="compact-cta-actions">
-              <a href="#contact" className="button button--forest">
+              <button
+                type="button"
+                className="button button--forest"
+                onClick={(event) => openProjectModal("", "Start a Project", event.currentTarget)}
+              >
                 Start a Project
-              </a>
+              </button>
             </div>
           </div>
         </section>
@@ -3161,7 +4962,7 @@ function App() {
                   </a>
                 </li>
                 <li>
-                  <a href={`mailto:${EMAIL}`}>
+                  <a href={`mailto:${EMAIL}`} target="_self">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M4 6h16v12H4z" />
                       <path d="m4 7 8 6 8-6" />
@@ -3189,6 +4990,7 @@ function App() {
                   </a>
                 </li>
               </ul>
+
               <div className="footer-work-hours">
                 <div className="eyebrow eyebrow--mint">Work Hours</div>
                 <p>Monday - Friday: 9:00 AM - 5:00 PM</p>
@@ -3196,19 +4998,22 @@ function App() {
               </div>
             </div>
 
-            <div className="footer-newsletter">
-              <h3>Subscribe for project updates and BuildIT insights</h3>
-              <form className="footer-subscribe" aria-label="Subscribe to GProjects updates">
-                <input type="email" placeholder="Enter your Email" aria-label="Email address" />
-                <button type="submit">Subscribe Now</button>
-              </form>
+            <div className="footer-links-block">
+              <div className="eyebrow eyebrow--mint">Support</div>
+              <ul>
+                <li><a href={siteHref("/privacy-policy")}>Privacy Policy</a></li>
+                <li><a href={siteHref("/terms-and-conditions")}>Terms &amp; Conditions</a></li>
+                <li><a href={siteHref("/disclaimer")}>Disclaimer</a></li>
+                <li><a href={siteHref("/faq")}>FAQ</a></li>
+                <li><a href={siteHref("/accessibility")}>Accessibility</a></li>
+              </ul>
             </div>
           </div>
 
           <div className="footer-bottom">
-            <p>&copy; 2024 GProjects Limited. All rights reserved.</p>
-            <p>
-              Designed and built by{" "}
+            <p>&copy; 2026 GProjects Limited. All rights reserved.</p>
+            <p className="footer-credit">
+              Designed &amp; built by{" "}
               <a href="https://teravora.com" target="_blank" rel="noopener noreferrer">
                 Teravora
               </a>
@@ -3217,6 +5022,12 @@ function App() {
           </div>
         </div>
       </footer>
+      <ProjectEnquiryModal
+        isOpen={isProjectModalOpen}
+        onClose={closeProjectModal}
+        presetService={projectModalPreset}
+        triggerLabel={projectModalTrigger}
+      />
     </div>
   );
 }
